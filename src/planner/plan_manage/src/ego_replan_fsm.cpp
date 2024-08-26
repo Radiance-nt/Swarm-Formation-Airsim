@@ -8,8 +8,14 @@ namespace ego_planner
   {
     result_file_.close();
   }
+  void EGOReplanFSM::updateParameterCallback(const ros::TimerEvent& event)
+{
+    planner_manager_->update_parameter(*nh_ptr_);
+}
+
   void EGOReplanFSM::init(ros::NodeHandle &nh)
   {
+    nh_ptr_ = &nh;
     current_wp_ = 0;
     exec_state_ = FSM_EXEC_STATE::INIT;
     have_target_ = false;
@@ -22,11 +28,13 @@ namespace ego_planner
     /*  fsm param  */
     nh.param("fsm/flight_type", target_type_, -1);
     nh.param("fsm/thresh_replan_time", replan_thresh_, -1.0);
+    nh.param("fsm/thresh_goal", goal_reached_thresh_, 0.2);
     nh.param("fsm/thresh_no_replan_meter", no_replan_thresh_, -1.0);
     nh.param("fsm/planning_horizon", planning_horizen_, -1.0);
     nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0);
     nh.param("fsm/emergency_time", emergency_time_, 1.0);
     nh.param("fsm/realworld_experiment", flag_realworld_experiment_, false);
+    nh.param("fsm/emergency_enable", emergency_when_collision_, false);
     nh.param("fsm/fail_safe", enable_fail_safe_, true);
     nh.param("fsm/result_file", result_fn_, string("/home/zuzu/Documents/Benchmark/21-RSS-ego-swarm/2.24/ego/ego_swarm.txt"));
     nh.param("fsm/replan_trajectory_time", replan_trajectory_time_, 0.0);
@@ -49,7 +57,7 @@ namespace ego_planner
       nh.param("fsm/target" + to_string(i) + "_z", goalpoints_[i][2], -1.0);
     }
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 11; i++)
     {
       nh.param("global_goal/relative_pos_" + to_string(i) + "/x", swarm_relative_pts_[i][0], -1.0);
       nh.param("global_goal/relative_pos_" + to_string(i) + "/y", swarm_relative_pts_[i][1], -1.0);
@@ -63,10 +71,11 @@ namespace ego_planner
     planner_manager_.reset(new EGOPlannerManager);
     planner_manager_->initPlanModules(nh, visualization_);
     planner_manager_->deliverTrajToOptimizer(); // store trajectories
-    planner_manager_->setDroneIdtoOpt();
 
     /* callback */
     exec_timer_ = nh.createTimer(ros::Duration(0.01), &EGOReplanFSM::execFSMCallback, this);
+    // Add a timer to call update_parameter every 0.2 seconds
+    param_update_timer_ = nh.createTimer(ros::Duration(0.2), &EGOReplanFSM::updateParameterCallback, this);
     safety_timer_ = nh.createTimer(ros::Duration(0.05), &EGOReplanFSM::checkCollisionCallback, this);
 
     odom_sub_ = nh.subscribe("odom_world", 1, &EGOReplanFSM::odometryCallback, this);
@@ -120,6 +129,16 @@ namespace ego_planner
     cout << "Wrong target_type_ value! target_type_=" << target_type_ << endl;
   }
 
+void EGOReplanFSM::computeDesiredStartState(double desired_start_time,
+                              Eigen::Vector3d& desired_start_pt,
+                              Eigen::Vector3d& desired_start_vel,
+                              Eigen::Vector3d& desired_start_acc) {
+    double dt = desired_start_time - odom_timestamp.toSec();
+    // Using odometry to calculate the desired start state
+    desired_start_pt = odom_pos_ + 0.5 * odom_vel_ * dt + 0.25 * odom_acc_ * dt * dt;
+    desired_start_vel = odom_vel_ + odom_acc_ * dt;
+    desired_start_acc = odom_acc_;
+}
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   {
     exec_timer_.stop(); // To avoid blockage
@@ -221,7 +240,14 @@ namespace ego_planner
       t_cur = min(info->duration, t_cur);
 
       Eigen::Vector3d pos = info->traj.getPos(t_cur);
-
+      // Eigen::Vector3d pos = odom_pos_, vel, acc;
+      // computeDesiredStartState(t_cur + info->start_time, pos, vel, acc);
+      if ((!reached_goal) && ((end_pt_ - pos).norm() < goal_reached_thresh_ )){
+        reached_goal = true;
+        std_msgs::Bool msg;
+        msg.data = true;
+        reached_pub_.publish(msg);
+      }
       if ((local_target_pt_ - end_pt_).norm() < 0.1) // local target close to the global target
       {
         if (t_cur > info->duration - 0.2)
@@ -236,9 +262,9 @@ namespace ego_planner
 
           printf("\033[47;30m\n[drone %d reached goal]==============================================\033[0m\n",
                  planner_manager_->pp_.drone_id);
-          std_msgs::Bool msg;
-          msg.data = true;
-          reached_pub_.publish(msg);
+          // std_msgs::Bool msg;
+          // msg.data = true;
+          // reached_pub_.publish(msg);
           goto force_return;
         }
         else if ((end_pt_ - pos).norm() > no_replan_thresh_ && t_cur > replan_thresh_)
@@ -360,7 +386,7 @@ namespace ego_planner
       }
       else
       {
-        if (t_temp - t_cur < emergency_time_) // 1.0s of emergency time
+        if (emergency_when_collision_ && (t_temp - t_cur < emergency_time_)) // 1.0s of emergency time
         {
           ROS_WARN("Emergency stop! time=%f", t_temp - t_cur);
           changeFSMExecState(EMERGENCY_STOP, "SAFETY");
@@ -417,6 +443,7 @@ namespace ego_planner
       end_vel_.setZero();
       have_target_ = true;
       have_new_target_ = true;
+      reached_goal = false;
 
       /*** FSM ***/
       if (exec_state_ == WAIT_TARGET)
@@ -435,6 +462,7 @@ namespace ego_planner
 
   void EGOReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
   {
+    odom_timestamp = msg->header.stamp;
     odom_pos_(0) = msg->pose.pose.position.x;
     odom_pos_(1) = msg->pose.pose.position.y;
     odom_pos_(2) = msg->pose.pose.position.z;
@@ -447,6 +475,16 @@ namespace ego_planner
     odom_orient_.x() = msg->pose.pose.orientation.x;
     odom_orient_.y() = msg->pose.pose.orientation.y;
     odom_orient_.z() = msg->pose.pose.orientation.z;
+
+    odom_acc_ = Eigen::Vector3d(0,0,0);
+    if (prev_odom_timestamp.toSec() != 0) {
+      double dt = (odom_timestamp - prev_odom_timestamp).toSec();
+      if (dt > 0) {
+        odom_acc_ = (odom_vel_ - prev_odom_vel_) / dt;
+      }
+    }
+    prev_odom_vel_ = odom_vel_;
+    prev_odom_timestamp = odom_timestamp;
 
     have_odom_ = true;
   }
@@ -470,8 +508,8 @@ namespace ego_planner
     }
     if (abs((ros::Time::now() - msg->start_time).toSec()) > 0.25)
     {
-      ROS_WARN("Time stamp diff: Local - Remote Agent %d = %fs",
-               msg->drone_id, (ros::Time::now() - msg->start_time).toSec());
+      // ROS_WARN("Time stamp diff: Local - Remote Agent %d = %fs",
+      //          msg->drone_id, (ros::Time::now() - msg->start_time).toSec());
       return;
     }
 
@@ -630,16 +668,21 @@ namespace ego_planner
   
   void EGOReplanFSM::formationWaypointCallback(const geometry_msgs::PoseStampedPtr &msg)
   {
-    if (msg->pose.position.z < -0.1)
-      return;
+    for (int i = 0; i < 11; i++)
+    {
+      nh_ptr_->param("global_goal/relative_pos_" + to_string(i) + "/x", swarm_relative_pts_[i][0], -1.0);
+      nh_ptr_->param("global_goal/relative_pos_" + to_string(i) + "/y", swarm_relative_pts_[i][1], -1.0);
+      nh_ptr_->param("global_goal/relative_pos_" + to_string(i) + "/z", swarm_relative_pts_[i][2], -1.0);
+    }
 
+    nh_ptr_->param("global_goal/swarm_scale", swarm_scale_, 1.0);
     cout << "Triggered!" << endl;
     init_pt_ = odom_pos_;
 
     bool success = false;
     swarm_central_pos_(0) = msg->pose.position.x;
     swarm_central_pos_(1) = msg->pose.position.y;
-    swarm_central_pos_(2) = 0.5;
+    swarm_central_pos_(2) = msg->pose.position.z;
 
     int id = planner_manager_->pp_.drone_id;
 
@@ -647,14 +690,39 @@ namespace ego_planner
     relative_pos << swarm_relative_pts_[id][0],
                     swarm_relative_pts_[id][1],
                     swarm_relative_pts_[id][2];
+
+    double x, y, z;
+    if (nh_ptr_->getParam("/swarm/center_position/x", x) &&
+        nh_ptr_->getParam("/swarm/center_position/y", y) &&
+        nh_ptr_->getParam("/swarm/center_position/z", z))
+    {
+        Eigen::Vector3d current_center_position;
+        current_center_position << x, y, z;
+        Eigen::Vector3d diff = swarm_central_pos_ - current_center_position;
+
+        double angle = atan2(diff(1), diff(0));
+
+        Eigen::Matrix2d rotation_matrix;
+        rotation_matrix << cos(angle), -sin(angle),
+                           sin(angle),  cos(angle);
+        Eigen::Vector2d rotated_position = rotation_matrix * relative_pos.head<2>();
+
+        relative_pos(0) = rotated_position(0);
+        relative_pos(1) = rotated_position(1);
+    }
+
     end_pt_ = swarm_central_pos_ + swarm_scale_ * relative_pos;
 
     std::vector<Eigen::Vector3d> one_pt_wps;
     one_pt_wps.push_back(end_pt_);
 
 
+    // success = planner_manager_->planGlobalTrajWaypoints(
+    //     odom_pos_, odom_vel_, Eigen::Vector3d::Zero(),
+    //     one_pt_wps, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+
     success = planner_manager_->planGlobalTrajWaypoints(
-        odom_pos_, odom_vel_, Eigen::Vector3d::Zero(),
+        odom_pos_, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
         one_pt_wps, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
 
     visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
@@ -673,8 +741,8 @@ namespace ego_planner
       end_vel_.setZero();
       have_target_ = true;
       have_new_target_ = true;
+      reached_goal = false;
 
-      /*** FSM ***/
       if (exec_state_ == WAIT_TARGET)
         changeFSMExecState(SEQUENTIAL_START, "TRIG");
       else if (exec_state_ == EXEC_TRAJ)
@@ -729,7 +797,7 @@ namespace ego_planner
       end_vel_.setZero();
       have_target_ = true;
       have_new_target_ = true;
-
+      reached_goal = false;
       // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
       ros::Duration(0.001).sleep();
       visualization_->displayGlobalPathList(gloabl_traj, 0.1, 0);
@@ -767,7 +835,10 @@ namespace ego_planner
     start_pt_ = info->traj.getPos(t_cur);
     start_vel_ = info->traj.getVel(t_cur);
     start_acc_ = info->traj.getAcc(t_cur);
-
+    // start_pt_ = odom_pos_;
+    // start_vel_ = odom_vel_;
+    // start_acc_ = odom_acc_;
+    // computeDesiredStartState(t_cur + info->start_time, start_pt_, start_vel_, start_acc_);
     bool success = callReboundReplan(flag_use_poly_init, false, use_formation);
 
     if (!success)

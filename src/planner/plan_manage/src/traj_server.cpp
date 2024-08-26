@@ -10,6 +10,7 @@
 #include <sstream>
 #include <iomanip>
 #include <chrono>
+#include <deque>
 
 ros::Publisher pos_cmd_pub;
 
@@ -22,6 +23,7 @@ boost::shared_ptr<poly_traj::Trajectory> traj_;
 double traj_duration_;
 ros::Time start_time_;
 int traj_id_;
+double ctrl_freq;
 
 // yaw control
 double last_yaw_, last_yaw_dot_;
@@ -37,6 +39,41 @@ std::string result_dir = "/home/zuzu/Documents/report/";
 std::fstream result_file;
 std::vector<Eigen::Vector3d> pos_vec_, vel_vec_, acc_vec_, jerk_vec_;
 std::vector<double> time_vec_;
+Eigen::Vector3d odom_pos_vec_, odom_vel_vec_, odom_acc_vec_;
+ros::Time odom_timestamp, prev_odom_timestamp=ros::Time(0);
+Eigen::Vector3d prev_odom_vel_vec_;
+bool has_odom_ = false;
+double kp_pos[3] = {0.0, 0.0, 0.0};
+double kd_pos[3] = {0.0, 0.0, 0.0};
+double ki_pos[3] = {0.0, 0.0, 0.0};
+
+std::deque<Eigen::Vector3d> integral_pos_buffer;
+int window_size = 10;
+Eigen::Vector3d integral_pos_max(Eigen::Vector3d::Ones());
+
+Eigen::Vector3d positionPIDControl(const Eigen::Vector3d& desired_pos, const Eigen::Vector3d& current_pos, const Eigen::Vector3d& current_vel, double dt) {
+  Eigen::Vector3d error_pos = desired_pos - current_pos;
+  integral_pos_buffer.push_back(error_pos);
+  if (integral_pos_buffer.size() > window_size) {
+    integral_pos_buffer.pop_front();
+  }
+  Eigen::Vector3d integral_pos = Eigen::Vector3d::Zero();
+  for (const auto& error : integral_pos_buffer) {
+    integral_pos += error;
+  }
+  for (int i = 0; i < 3; ++i) {
+    integral_pos[i] = std::max(-integral_pos_max[i], std::min(integral_pos[i], integral_pos_max[i]));
+  }
+  Eigen::Vector3d control_signal_pos;
+  for (int i = 0; i < 3; ++i) {
+    control_signal_pos[i] = kp_pos[i] * error_pos[i] + ki_pos[i] * integral_pos[i] - kd_pos[i] * current_vel[i];
+    // control_signal_pos[i] = kp_pos[i] * error_pos[i] - kd_pos[i] * current_vel[i];
+  }
+  // ROS_INFO_STREAM("error_pos: " << error_pos.transpose());
+  // ROS_INFO_STREAM("integral_pos: " << integral_pos.transpose());
+  // ROS_INFO_STREAM("current_vel: " << current_vel.transpose());
+  return control_signal_pos;
+}
 
 const std::vector<std::string> explode(const std::string& s, const char& c)
 {
@@ -266,6 +303,12 @@ void cmdCallback(const ros::TimerEvent &e)
   {
     // std::cout << "[Traj server]: invalid time." << std::endl;
   }
+  Eigen::Vector3d vel_control_signal(Eigen::Vector3d::Zero());
+  if (has_odom_){
+    double get_pos_timestamp_ = std::min((odom_timestamp - start_time_).toSec(), traj_duration_);
+    vel_control_signal = positionPIDControl(traj_->getPos(get_pos_timestamp_), odom_pos_vec_, odom_vel_vec_, ctrl_freq);
+    vel += vel_control_signal;
+  }
   time_last = time_now;
   time_vec_.push_back((ros::Time::now() - global_start_time).toSec());
   pos_vec_.push_back(pos);
@@ -301,6 +344,63 @@ void cmdCallback(const ros::TimerEvent &e)
   pos_cmd_pub.publish(cmd);
 }
 
+void odomCallback(const nav_msgs::OdometryConstPtr &odom)
+{
+  // std::cout<< "odom received" << std::endl;
+  has_odom_ = true;
+  odom_timestamp = odom->header.stamp;
+  odom_pos_vec_(0) = odom->pose.pose.position.x;
+  odom_pos_vec_(1) = odom->pose.pose.position.y;
+  odom_pos_vec_(2) = odom->pose.pose.position.z;
+  odom_vel_vec_(0) = odom->twist.twist.linear.x;
+  odom_vel_vec_(1) = odom->twist.twist.linear.y;
+  odom_vel_vec_(2) = odom->twist.twist.linear.z;
+
+  odom_acc_vec_ = Eigen::Vector3d(0,0,0);
+  if (prev_odom_timestamp.toSec() != 0) {
+    double dt = (odom_timestamp - prev_odom_timestamp).toSec();
+    if (dt > 0) {
+      odom_acc_vec_ = (odom_vel_vec_ - prev_odom_vel_vec_) / dt;
+    }
+  }
+
+  prev_odom_vel_vec_ = odom_vel_vec_;
+  prev_odom_timestamp = odom_timestamp;
+
+  if (receive_traj_){   
+    traj_->odom_pos_vec_ = odom_pos_vec_;
+    traj_->odom_vel_vec_ = odom_vel_vec_;
+    traj_->odom_acc_vec_ = odom_acc_vec_;
+  }
+}
+
+
+void updateParametersCallback(const ros::TimerEvent &e)
+{
+  for (int i = 0; i < 3; ++i) {
+    double kp, kd, ki, integral_max;
+    if (ros::param::get("/kp_pos_" + std::to_string(i), kp)) {
+      kp_pos[i] = kp;
+    }
+    if (ros::param::get("/kd_pos_" + std::to_string(i), kd)) {
+      kd_pos[i] = kd;
+    }
+    if (ros::param::get("/ki_pos_" + std::to_string(i), ki)) {
+      ki_pos[i] = ki;
+    }
+    if (ros::param::get("/integral_pos_max_" + std::to_string(i), integral_max)) {
+      integral_pos_max[i] = integral_max;
+    }
+    if (integral_pos_max[i] < 0) {
+      integral_pos_max[i] = integral_pos_max[i] * -1;
+    }
+  }
+  // ROS_INFO("kp_pos: [%f, %f, %f]", kp_pos[0], kp_pos[1], kp_pos[2]);
+  // ROS_INFO("kd_pos: [%f, %f, %f]", kd_pos[0], kd_pos[1], kd_pos[2]);
+  // ROS_INFO("ki_pos: [%f, %f, %f]", ki_pos[0], ki_pos[1], ki_pos[2]);
+}
+
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "traj_server");
@@ -316,10 +416,12 @@ int main(int argc, char **argv)
   ros::Subscriber reached_sub = nh.subscribe("planning/finish", 10, finishCallback);
   ros::Subscriber start_sub = nh.subscribe("planning/start", 10, startCallback);
   pos_cmd_pub = nh.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 50);
-  
 
-  ros::Timer cmd_timer = nh.createTimer(ros::Duration(0.01), cmdCallback);
-
+  nh.param("traj_server/ctrl_freq", ctrl_freq, 0.05);
+  std::string odom_topic_name = "/drone_" + v[1] + "_visual_slam/odom";
+  ros::Subscriber odom_sub = nh.subscribe<nav_msgs::Odometry>(odom_topic_name, 10, odomCallback);
+  ros::Timer cmd_timer = nh.createTimer(ros::Duration(ctrl_freq), cmdCallback);
+  ros::Timer param_update_timer = nh.createTimer(ros::Duration(0.5), updateParametersCallback);
   /* control parameter */
   cmd.kx[0] = pos_gain[0];
   cmd.kx[1] = pos_gain[1];

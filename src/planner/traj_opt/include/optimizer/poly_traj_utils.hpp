@@ -392,6 +392,7 @@ namespace poly_traj
         Pieces pieces;
 
     public:
+        Eigen::Vector3d odom_pos_vec_, odom_vel_vec_, odom_acc_vec_;
         Trajectory() = default;
 
         Trajectory(const std::vector<double> &durs,
@@ -541,6 +542,21 @@ namespace poly_traj
         {
             int pieceIdx = locatePieceIdx(t);
             return pieces[pieceIdx].getAcc(t);
+        }
+
+        inline Eigen::Vector3d getPosOdom(double t) const
+        {
+            return odom_pos_vec_;
+        }
+
+        inline Eigen::Vector3d getVelOdom(double t) const
+        {
+            return odom_vel_vec_;
+        }
+
+        inline Eigen::Vector3d getAccOdom(double t) const
+        {
+            return odom_acc_vec_;
         }
 
         inline Eigen::Vector3d getJer(double t) const

@@ -94,6 +94,7 @@ namespace ego_planner
 
     /* set variables */
     void setParam(ros::NodeHandle &nh);
+    void update_parameter(ros::NodeHandle &nh);
     void setEnvironment(const GridMap::Ptr &map);
     void setControlPoints(const Eigen::MatrixXd &points);
     void setSwarmTrajs(SwarmTrajData *swarm_trajs_ptr);
@@ -188,6 +189,20 @@ namespace ego_planner
 
     bool getFormationPos(std::vector<Eigen::Vector3d> &swarm_graph_pos, Eigen::Vector3d pos);
 
+    bool waitForParam(const std::string& param_name, const ros::Duration& timeout) {
+        ros::Time start_time = ros::Time::now();
+        bool param_exists = false;
+
+        while (ros::Time::now() - start_time < timeout) {
+            if (ros::param::has(param_name)) {
+                param_exists = true;
+                break;
+            }
+            ros::Duration(1).sleep(); // Sleep for 100 milliseconds
+        }
+
+        return param_exists;
+    }
     void setDesiredFormation(int type){
       std::vector<Eigen::Vector3d> swarm_des;
       switch (type)
@@ -201,23 +216,27 @@ namespace ego_planner
 
         case FORMATION_TYPE::REGULAR_HEXAGON :
         {
+          int num_uavs = 0;
           // set the desired formation
-          Eigen::Vector3d v0(0,0,0);
-          Eigen::Vector3d v1(1.7321,-1,0);
-          Eigen::Vector3d v2(0,-2,0);
-          Eigen::Vector3d v3(-1.7321,-1,0);
-          Eigen::Vector3d v4(-1.7321,1,0);
-          Eigen::Vector3d v5(0,2,0);
-          Eigen::Vector3d v6(1.7321,1,0);
 
-          swarm_des.push_back(v0);
-          swarm_des.push_back(v1);
-          swarm_des.push_back(v2);
-          swarm_des.push_back(v3);
-          swarm_des.push_back(v4);
-          swarm_des.push_back(v5);
-          swarm_des.push_back(v6);
+          std::string param_name = "/global/num_uavs";
+          ros::Duration timeout(20.0);
+          if (waitForParam(param_name, timeout)) {
+            ros::param::get(param_name, num_uavs);
+          } else
+          {
+            ROS_ERROR("Param %s not available: ", std::to_string(formation_size_).c_str());
+          }
 
+          for (int i = 0; i < num_uavs; ++i) {
+              double x, y, z;
+              std::string param_base = "/drone_" + std::to_string(drone_id_) + "_ego_planner_node/global_goal/relative_pos_" + std::to_string(i);
+              ros::param::get(param_base + "/x", x);
+              ros::param::get(param_base + "/y", y);
+              ros::param::get(param_base + "/z", z);
+              Eigen::Vector3d point(x, y, z);
+              swarm_des.push_back(point);
+          }
           formation_size_ = swarm_des.size();
           // construct the desired swarm graph
           swarm_graph_->setDesiredForm(swarm_des);

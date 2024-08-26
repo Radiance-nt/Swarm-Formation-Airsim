@@ -57,7 +57,7 @@ namespace ego_planner
 
     /* parameters */
     int target_type_; // 1 mannual select, 2 hard code
-    double no_replan_thresh_, replan_thresh_;
+    double goal_reached_thresh_, no_replan_thresh_, replan_thresh_;
     double waypoints_[50][3];
     int waypoint_num_;
     int goal_num_;
@@ -66,6 +66,7 @@ namespace ego_planner
     double emergency_time_;
     bool flag_realworld_experiment_;
     bool enable_fail_safe_;
+    bool emergency_when_collision_;
     int last_end_id_;
     double replan_trajectory_time_;
 
@@ -76,10 +77,14 @@ namespace ego_planner
 
     /* planning data */
     bool have_trigger_, have_target_, have_odom_, have_new_target_, have_recv_pre_agent_, have_local_traj_;
+    bool reached_goal;
     FSM_EXEC_STATE exec_state_;
     int continously_called_times_{0};
 
     Eigen::Vector3d odom_pos_, odom_vel_, odom_acc_; // odometry state
+    ros::Time odom_timestamp, prev_odom_timestamp=ros::Time(0);
+    Eigen::Vector3d prev_odom_vel_;
+
     Eigen::Quaterniond odom_orient_;
 
     Eigen::Vector3d init_pt_, start_pt_, start_vel_, start_acc_, start_yaw_; // start state
@@ -94,7 +99,7 @@ namespace ego_planner
 
     /* ROS utils */
     ros::NodeHandle node_;
-    ros::Timer exec_timer_, safety_timer_;
+    ros::Timer exec_timer_, safety_timer_, param_update_timer_;
     ros::Subscriber waypoint_sub_, odom_sub_, swarm_trajs_sub_, broadcast_bspline_sub_, trigger_sub_, assignment_sub_;
     ros::Publisher replan_pub_, new_pub_, poly_traj_pub_, data_disp_pub_, swarm_trajs_pub_, broadcast_bspline_pub_;
     ros::Publisher broadcast_ploytraj_pub_;
@@ -118,6 +123,8 @@ namespace ego_planner
     void planGlobalTrajbyGivenWps();
     // void getLocalTarget();
 
+    void computeDesiredStartState(double replan_trajectory_time, Eigen::Vector3d &desired_start_pt, Eigen::Vector3d &desired_start_vel, Eigen::Vector3d &desired_start_acc);
+
     /* ROS functions */
     void execFSMCallback(const ros::TimerEvent &e);
     void checkCollisionCallback(const ros::TimerEvent &e);
@@ -129,6 +136,7 @@ namespace ego_planner
     void formationWaypointCallback(const geometry_msgs::PoseStampedPtr &msg);
     bool frontEndPathSearching();
     bool checkCollision();
+    ros::NodeHandle *nh_ptr_;
 
   public:
     EGOReplanFSM(/* args */)
@@ -136,6 +144,7 @@ namespace ego_planner
     }
     ~EGOReplanFSM();
 
+    void updateParameterCallback(const ros::TimerEvent &event);
 
     void init(ros::NodeHandle &nh);
 

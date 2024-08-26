@@ -1,0 +1,55 @@
+drone_num: 8
+fsm:
+  replan_trajectory_time: 0.1
+global_goal:
+  relative_pos_0:
+    x: 1.9598444473145646
+    y: 0.0
+    z: 0.0
+  relative_pos_1:
+    x: 1.3858192987669302
+    y: 1.38581929876693
+    z: 0.0
+  relative_pos_2:
+    x: 1.2000586146152475e-16
+    y: 1.9598444473145646
+    z: 0.0
+  relative_pos_3:
+    x: -1.38581929876693
+    y: 1.3858192987669302
+    z: 0.0
+  relative_pos_4:
+    x: -1.9598444473145646
+    y: 2.400117229230495e-16
+    z: 0.0
+  relative_pos_5:
+    x: -1.3858192987669304
+    y: -1.38581929876693
+    z: 0.0
+  relative_pos_6:
+    x: -3.6001758438457423e-16
+    y: -1.9598444473145646
+    z: 0.0
+  relative_pos_7:
+    x: 1.3858192987669298
+    y: -1.3858192987669304
+    z: 0.0
+  swarm_central_pos:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  swarm_scale: 1.5
+inspire_num: 8
+max_acc: 8
+max_vel: 3.0
+optimization:
+  formation_name: circular
+  formation_type: 1
+  obstacle_clearance: 0.5
+  swarm_clearance: 0.5
+  weight_feasibility: 2000.0
+  weight_formation: 15000
+  weight_obstacle: 60000.0
+  weight_sqrvariance: 2000.0
+  weight_swarm: 50000
+  weight_time: 20.0

@@ -83,14 +83,16 @@ namespace ego_planner
     double time_ms = (t2 - t1).toSec() * 1000;
     double total_time_ms = (t2 - t0).toSec() * 1000;
 
-    printf("\033[32miter=%d, use_formation=%d, time(ms)=%5.3f, \n\033[0m", iter_num_, use_formation, time_ms);
+    // printf("\033[32miter=%d, use_formation=%d, time(ms)=%5.3f, \n\033[0m", iter_num_, use_formation, time_ms);
     // ROS_WARN("The optimization result is : %s", lbfgs::lbfgs_strerror(result));
     optimal_points = cps_.points;
 
     showFormationInformation(false, start_pos);
 
-    if (occ)
+    if (occ){
+      ROS_ERROR("In OptimizeTrajectory_lbfgs collided");
       return false;
+      }
     else
       return true;
   }
@@ -732,7 +734,31 @@ namespace ego_planner
       cout << "[formation]: --------------- " << similarity_error << " --------------" << endl;
     }
   }
-
+  /* helper functions */
+  void PolyTrajOptimizer::update_parameter(ros::NodeHandle &nh)
+  {
+    int previous_formation_type_ = formation_type_;
+    nh.param("optimization/constrain_points_perPiece", cps_num_prePiece_, -1);
+    nh.param("optimization/weight_obstacle", wei_obs_, -1.0);
+    nh.param("optimization/weight_swarm", wei_swarm_, -1.0);
+    nh.param("optimization/weight_feasibility", wei_feas_, -1.0);
+    nh.param("optimization/weight_sqrvariance", wei_sqrvar_, -1.0);
+    nh.param("optimization/weight_time", wei_time_, -1.0);
+    nh.param("optimization/weight_formation", wei_formation_, -1.0);
+    nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0);
+    nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
+    nh.param("optimization/formation_type", formation_type_, -1);
+    nh.param("max_vel", max_vel_, -1.0);
+    nh.param("max_acc", max_acc_, -1.0);
+    // ROS_INFO("Updating parameters in poly...");
+    if (formation_type_ != previous_formation_type_)
+    {
+      // set the formation type
+      swarm_graph_.reset(new SwarmGraph);
+      setDesiredFormation(formation_type_);
+    }
+  }
+  
   /* helper functions */
   void PolyTrajOptimizer::setParam(ros::NodeHandle &nh)
   {
@@ -747,8 +773,8 @@ namespace ego_planner
     nh.param("optimization/obstacle_clearance", obs_clearance_, -1.0);
     nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
     nh.param("optimization/formation_type", formation_type_, -1);
-    nh.param("optimization/max_vel", max_vel_, -1.0);
-    nh.param("optimization/max_acc", max_acc_, -1.0);
+    nh.param("max_vel", max_vel_, -1.0);
+    nh.param("max_acc", max_acc_, -1.0);
 
     // set the formation type
     swarm_graph_.reset(new SwarmGraph);
@@ -760,7 +786,15 @@ namespace ego_planner
     grid_map_ = map;
 
     a_star_.reset(new AStar);
-    a_star_->initGridMap(grid_map_, Eigen::Vector3i(800, 200, 40));
+    a_star_->initGridMap(grid_map_, Eigen::Vector3i(400, 400, 100));
+
+    // Eigen::Vector3d origin, map_size;
+    // double resolution = grid_map_->getResolution();
+    // grid_map_->getRegion(origin, map_size);
+    // Eigen::Vector3i grid_size;
+    // grid_size = (map_size / resolution).cast<int>();
+    // std::cout << "resolution" << resolution << "map_size" << map_size << "grid_size" << grid_size << std::endl;
+    // a_star_->initGridMap(grid_map_, map_size);
   }
 
   void PolyTrajOptimizer::setControlPoints(const Eigen::MatrixXd &points)

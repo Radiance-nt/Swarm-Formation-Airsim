@@ -46,6 +46,7 @@ namespace ego_planner
         const double planning_horizen,
         const Eigen::Vector3d &start_pt, const Eigen::Vector3d &global_end_pt,
         Eigen::Vector3d &local_target_pos, Eigen::Vector3d &local_target_vel);
+    void update_parameter(ros::NodeHandle &nh);
     void initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis = NULL);
     bool EmergencyStop(Eigen::Vector3d stop_pos);
 

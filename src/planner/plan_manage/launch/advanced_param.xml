@@ -2,6 +2,7 @@
   <arg name="map_size_x_"/>
   <arg name="map_size_y_"/>
   <arg name="map_size_z_"/>
+  <arg name="config_file" />
 
   <arg name="odometry_topic"/>
   <arg name="camera_pose_topic"/>
@@ -13,9 +14,11 @@
   <arg name="fx"/>
   <arg name="fy"/>
 
-  <arg name="max_vel"/>
-  <arg name="max_acc"/>
   <arg name="planning_horizon"/>
+  <arg name="local_map_margin"/>
+  <arg name="local_update_range_x"/>
+  <arg name="local_update_range_y"/>
+  <arg name="local_update_range_z"/>
 
   <arg name="point_num"/>
   <arg name="point0_x"/>
@@ -49,7 +52,7 @@
   <!-- main node -->
   <!-- <node pkg="ego_planner" name="ego_planner_node" type="ego_planner_node" output="screen" launch-prefix="valgrind"> -->
   <node pkg="ego_planner" name="drone_$(arg drone_id)_ego_planner_node" type="ego_planner_node" output="screen">
-  
+
     <remap from="~odom_world" to="/drone_$(arg drone_id)_$(arg odometry_topic)"/>
     <remap from="~planning/trajectory" to = "/drone_$(arg drone_id)_planning/trajectory"/>
     <remap from="~planning/start" to = "/drone_$(arg drone_id)_planning/start"/>
@@ -61,20 +64,22 @@
     <remap from="~grid_map/odom" to="/drone_$(arg drone_id)_$(arg odometry_topic)"/>
     <remap from="~grid_map/cloud" to="/drone_$(arg drone_id)_$(arg cloud_topic)"/>
     <!-- <remap from="~grid_map/cloud" to="/map_generator/global_cloud"/> -->
-    <remap from="~grid_map/pose"   to = "/drone_$(arg drone_id)_$(arg camera_pose_topic)"/> 
+    <remap from="~grid_map/pose"   to = "/drone_$(arg drone_id)_$(arg camera_pose_topic)"/>
     <remap from="~grid_map/depth" to = "/drone_$(arg drone_id)_$(arg depth_topic)"/>
-    
-   <rosparam file="$(find ego_planner)/config/normal_hexagon.yaml"/>
+
+    <rosparam file="$(arg config_file)" command="load"/>
 
     <!-- planning fsm -->
     <param name="fsm/flight_type"             value="$(arg flight_type)" type="int"/>
     <param name="fsm/thresh_replan_time"      value="1.0" type="double"/>
-    <param name="fsm/thresh_no_replan_meter"  value="1.0" type="double"/>
+    <param name="fsm/thresh_no_replan_meter"  value="3.0" type="double"/>
+    <param name="fsm/thresh_goal"             value="1.5" type="double"/>
     <param name="fsm/planning_horizon"        value="$(arg planning_horizon)" type="double"/> <!--always set to 1.5 times grater than sensing horizen-->
     <param name="fsm/planning_horizen_time"   value="3" type="double"/>
     <param name="fsm/emergency_time"          value="1.0" type="double"/>
+    <param name="fsm/emergency_enable"        value="false"/>
     <param name="fsm/realworld_experiment"    value="false"/>
-    <param name="fsm/fail_safe"               value="true"/>
+    <param name="fsm/fail_safe"               value="false"/>
     <!-- <param name="fsm/replan_trajectory_time"  value="$(arg replan_trajectory_time)" type="double"/> -->
 
     <param name="fsm/result_file" value="/home/zuzu/Documents/report/ego_swarm_1.txt"/>
@@ -92,19 +97,19 @@
     <param name="fsm/waypoint3_x"   value="$(arg point3_x)" type="double"/>
     <param name="fsm/waypoint3_y"   value="$(arg point3_y)" type="double"/>
     <param name="fsm/waypoint3_z"   value="$(arg point3_z)" type="double"/>
-    
-    <param name="grid_map/resolution"             value="0.1" /> 
-    <param name="grid_map/map_size_x"             value="$(arg map_size_x_)" /> 
-    <param name="grid_map/map_size_y"             value="$(arg map_size_y_)" /> 
-    <param name="grid_map/map_size_z"             value="$(arg map_size_z_)" /> 
-    <param name="grid_map/local_update_range_x"   value="5.5" /> 
-    <param name="grid_map/local_update_range_y"   value="5.5" /> 
-    <param name="grid_map/local_update_range_z"   value="4.5" /> 
-    <!-- <param name="grid_map/local_update_range_x"   value="$(arg map_size_x_)" /> 
-    <param name="grid_map/local_update_range_y"   value="$(arg map_size_y_)" /> 
+
+    <param name="grid_map/resolution"             value="0.4" />
+    <param name="grid_map/map_size_x"             value="$(arg map_size_x_)" />
+    <param name="grid_map/map_size_y"             value="$(arg map_size_y_)" />
+    <param name="grid_map/map_size_z"             value="$(arg map_size_z_)" />
+    <param name="grid_map/local_update_range_x"   value="$(arg local_update_range_x)" />
+    <param name="grid_map/local_update_range_y"   value="$(arg local_update_range_y)" />
+    <param name="grid_map/local_update_range_z"   value="$(arg local_update_range_z)" />
+    <!-- <param name="grid_map/local_update_range_x"   value="$(arg map_size_x_)" />
+    <param name="grid_map/local_update_range_y"   value="$(arg map_size_y_)" />
     <param name="grid_map/local_update_range_z"   value="$(arg map_size_z_)" /> -->
-    <param name="grid_map/obstacles_inflation"    value="0.1" /> 
-    <param name="grid_map/local_map_margin"       value="10"/>
+    <param name="grid_map/obstacles_inflation"    value="0.4" />
+    <param name="grid_map/local_map_margin"       value="$(arg local_map_margin)"/>
     <param name="grid_map/ground_height"          value="-0.01"/>
     <!-- camera parameter -->
     <param name="grid_map/cx" value="$(arg cx)"/>
@@ -128,8 +133,8 @@
     <param name="grid_map/min_ray_length" value="0.1"/>
     <param name="grid_map/max_ray_length" value="4.5"/>
   
-    <param name="grid_map/virtual_ceil_height"              value="3.0"/>
-    <param name="grid_map/visualization_truncate_height"    value="2.8"/>
+    <param name="grid_map/virtual_ceil_height"              value="$(arg map_size_z_)"/>
+    <param name="grid_map/visualization_truncate_height"    value="$(arg map_size_z_)"/>
     <param name="grid_map/show_occ_time"                    value="false"/>
     <param name="grid_map/pose_type"                        value="1"/>  
     <param name="grid_map/frame_id"                         value="world"/>
@@ -140,8 +145,6 @@
     <param name="grid_map/esdf_slice_height"               value="0.3"/>
 
   <!-- planner manager -->
-    <param name="manager/max_vel"                           value="$(arg max_vel)" type="double"/>
-    <param name="manager/max_acc"                           value="$(arg max_acc)" type="double"/>
     <param name="manager/control_points_distance"           value="0.4" type="double"/>
     <param name="manager/polyTraj_piece_length"             value="2.0" type="double"/>
     <param name="manager/feasibility_tolerance"             value="0.05" type="double"/>
@@ -162,8 +165,8 @@
     <param name="optimization/obstacle_clearance"           value="$(arg obstacle_clearance)"/>
     <param name="optimization/swarm_clearance"              value="$(arg swarm_clearance)"/> -->
     
-    <param name="optimization/max_vel"                      value="$(arg max_vel)" type="double"/>
-    <param name="optimization/max_acc"                      value="$(arg max_acc)" type="double"/>
+    <!-- <param name="optimization/max_vel"                      value="$(arg max_vel)" type="double"/> -->
+    <!-- <param name="optimization/max_acc"                      value="$(arg max_acc)" type="double"/> -->
     <!-- <param name="optimization/formation_type"               value="$(arg formation_type)"/> -->
     
     <param name="optimization/record_opt" value="true"/>

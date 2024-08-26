@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+	<arg name="drone_num" default="8" />
+	<arg name="config_file" default="$(find ego_planner)/config/fly.yaml" />
+    <arg name="seed" default="0"/>
+
+	<arg name="map_size_x" value="150.0" />
+	<arg name="map_size_y" value="150.0" />
+	<arg name="map_size_z" value="50.0" />
+
+    <param name="/map_size_x" value="$(arg map_size_x)" />
+    <param name="/map_size_y" value="$(arg map_size_y)" />
+    <param name="/map_size_z" value="$(arg map_size_z)" />
+
+	<arg name="odom_topic" value="visual_slam/odom" />
+	<arg name="formation_type" value="1" />
+	<!-- swarm topic transmitter bridge-->
+	<include file="$(find swarm_bridge)/launch/bridge.launch">
+		<arg name="drone_id" value="999" />
+		<arg name="broadcast_ip" value="127.0.0.255" />
+	</include>
+	<node pkg="airsim_package" name="airsim_bridge" type="bridge.py" output="screen" required="true"/>
+
+    <node pkg="airsim_package" name="record_bags" type="bag_record.py" output="screen"  required="true">
+        <param name="base_dir" value="$(find airsim_package)/../../bags" />
+        <param name="record_length" value="20" />
+        <param name="max_record" value="1" />
+        <param name="accelerate" value="1" />
+    </node>
+
+    <node pkg="airsim_package" name="record_videos" type="video_record.py" output="screen" required="true">
+        <param name="video_prefix" value="airsim_video" />
+        <param name="camera_name" value="Fixed" />
+        <param name="camera_k" value="3.0" />
+        <param name="camera_b" value="5" />
+        <param name="camera_alpha" value="0.2" />
+    </node>
+
+    <node pkg="airsim_package" name="navigation_control" type="navigation_control.py" output="screen" required="true">
+        <param name="seed" value="$(arg seed)"/>
+    </node>
+	<!-- swarm robots -->
+	<group if="$(eval arg('drone_num') &gt; 0)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="0" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 1)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="1" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 2)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="2" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 3)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="3" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 4)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="4" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 5)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="5" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 6)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="6" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 7)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="7" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 8)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="8" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 9)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="9" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 10)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="10" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 11)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="11" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 12)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="12" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<group if="$(eval arg('drone_num') &gt; 13)">
+		<include file="$(find ego_planner)/launch/run_in_sim.launch">
+			<arg name="drone_id" value="13" />
+			<arg name="config_file" value="$(arg config_file)" />
+			<arg name="map_size_x" value="$(arg map_size_x)" />
+			<arg name="map_size_y" value="$(arg map_size_y)" />
+			<arg name="map_size_z" value="$(arg map_size_z)" />
+			<arg name="odom_topic" value="$(arg odom_topic)" />
+		</include>
+	</group>
+	<include file="$(find ego_planner)/launch/rviz.launch" />
+</launch>

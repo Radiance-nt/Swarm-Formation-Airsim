@@ -1,0 +1,232 @@
+{
+  "SettingsVersion": 1.2,
+  "SimMode": "Multirotor",
+  "ExternalCameras": {
+    "Fixed": {
+      "CaptureSettings": [
+        {
+          "ImageType": 0,
+          "Width": 1080,
+          "Height": 720,
+          "FOV_Degrees": 90
+        }
+      ],
+      "X": 0,
+      "Y": 0,
+      "Z": -50,
+      "Pitch": -90,
+      "Roll": 0,
+      "Yaw": 0
+    }
+  },
+  "Vehicles": {
+    "UAV0": {
+      "VehicleType": "SimpleFlight",
+      "X": -25.0,
+      "Y": -8.040155552685436,
+      "Z": -1.0,
+      "Yaw": -180,
+      "Sensors": {
+        "LidarSensor1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 4,
+          "RotationsPerSecond": 200,
+          "PointsPerSecond": 20000,
+          "X": 0,
+          "Y": 0,
+          "Z": -1,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "VerticalFOVUpper": -5,
+          "VerticalFOVLower": -25,
+          "DrawDebugPoints": false,
+          "DataFrame": "VehicleInertialFrame"
+        }
+      }
+    },
+    "UAV1": {
+      "VehicleType": "SimpleFlight",
+      "X": -23.61418070123307,
+      "Y": -8.61418070123307,
+      "Z": -1.0,
+      "Yaw": -180,
+      "Sensors": {
+        "LidarSensor1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 4,
+          "RotationsPerSecond": 200,
+          "PointsPerSecond": 20000,
+          "X": 0,
+          "Y": 0,
+          "Z": -1,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "VerticalFOVUpper": -5,
+          "VerticalFOVLower": -25,
+          "DrawDebugPoints": false,
+          "DataFrame": "VehicleInertialFrame"
+        }
+      }
+    },
+    "UAV2": {
+      "VehicleType": "SimpleFlight",
+      "X": -23.040155552685434,
+      "Y": -10.0,
+      "Z": -1.0,
+      "Yaw": -180,
+      "Sensors": {
+        "LidarSensor1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 4,
+          "RotationsPerSecond": 200,
+          "PointsPerSecond": 20000,
+          "X": 0,
+          "Y": 0,
+          "Z": -1,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "VerticalFOVUpper": -5,
+          "VerticalFOVLower": -25,
+          "DrawDebugPoints": false,
+          "DataFrame": "VehicleInertialFrame"
+        }
+      }
+    },
+    "UAV3": {
+      "VehicleType": "SimpleFlight",
+      "X": -23.61418070123307,
+      "Y": -11.385819298766929,
+      "Z": -1.0,
+      "Yaw": -180,
+      "Sensors": {
+        "LidarSensor1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 4,
+          "RotationsPerSecond": 200,
+          "PointsPerSecond": 20000,
+          "X": 0,
+          "Y": 0,
+          "Z": -1,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "VerticalFOVUpper": -5,
+          "VerticalFOVLower": -25,
+          "DrawDebugPoints": false,
+          "DataFrame": "VehicleInertialFrame"
+        }
+      }
+    },
+    "UAV4": {
+      "VehicleType": "SimpleFlight",
+      "X": -25.0,
+      "Y": -11.959844447314564,
+      "Z": -1.0,
+      "Yaw": -180,
+      "Sensors": {
+        "LidarSensor1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 4,
+          "RotationsPerSecond": 200,
+          "PointsPerSecond": 20000,
+          "X": 0,
+          "Y": 0,
+          "Z": -1,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "VerticalFOVUpper": -5,
+          "VerticalFOVLower": -25,
+          "DrawDebugPoints": false,
+          "DataFrame": "VehicleInertialFrame"
+        }
+      }
+    },
+    "UAV5": {
+      "VehicleType": "SimpleFlight",
+      "X": -26.38581929876693,
+      "Y": -11.38581929876693,
+      "Z": -1.0,
+      "Yaw": -180,
+      "Sensors": {
+        "LidarSensor1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 4,
+          "RotationsPerSecond": 200,
+          "PointsPerSecond": 20000,
+          "X": 0,
+          "Y": 0,
+          "Z": -1,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "VerticalFOVUpper": -5,
+          "VerticalFOVLower": -25,
+          "DrawDebugPoints": false,
+          "DataFrame": "VehicleInertialFrame"
+        }
+      }
+    },
+    "UAV6": {
+      "VehicleType": "SimpleFlight",
+      "X": -26.959844447314566,
+      "Y": -10.0,
+      "Z": -1.0,
+      "Yaw": -180,
+      "Sensors": {
+        "LidarSensor1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 4,
+          "RotationsPerSecond": 200,
+          "PointsPerSecond": 20000,
+          "X": 0,
+          "Y": 0,
+          "Z": -1,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "VerticalFOVUpper": -5,
+          "VerticalFOVLower": -25,
+          "DrawDebugPoints": false,
+          "DataFrame": "VehicleInertialFrame"
+        }
+      }
+    },
+    "UAV7": {
+      "VehicleType": "SimpleFlight",
+      "X": -26.38581929876693,
+      "Y": -8.614180701233071,
+      "Z": -1.0,
+      "Yaw": -180,
+      "Sensors": {
+        "LidarSensor1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 4,
+          "RotationsPerSecond": 200,
+          "PointsPerSecond": 20000,
+          "X": 0,
+          "Y": 0,
+          "Z": -1,
+          "Roll": 0,
+          "Pitch": 0,
+          "Yaw": 0,
+          "VerticalFOVUpper": -5,
+          "VerticalFOVLower": -25,
+          "DrawDebugPoints": false,
+          "DataFrame": "VehicleInertialFrame"
+        }
+      }
+    }
+  }
+}

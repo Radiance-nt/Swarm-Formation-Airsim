@@ -15,12 +15,24 @@ namespace ego_planner
     std::cout << "des manager" << std::endl;
   }
 
+  void EGOPlannerManager::update_parameter(ros::NodeHandle &nh){
+    nh.param("max_vel", pp_.max_vel_, -1.0);
+    nh.param("max_acc", pp_.max_acc_, -1.0);
+    nh.param("manager/feasibility_tolerance", pp_.feasibility_tolerance_, 0.0);
+    nh.param("manager/control_points_distance", pp_.ctrl_pt_dist, -1.0);
+    nh.param("manager/polyTraj_piece_length", pp_.polyTraj_piece_length, -1.0);
+    nh.param("manager/planning_horizon", pp_.planning_horizen_, 5.0);
+    nh.param("manager/use_distinctive_trajs", pp_.use_distinctive_trajs, false);
+    nh.param("manager/drone_id", pp_.drone_id, -1);
+    ploy_traj_opt_->update_parameter(nh);
+  }
+
   void EGOPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
   {
     /* read algorithm parameters */
 
-    nh.param("manager/max_vel", pp_.max_vel_, -1.0);
-    nh.param("manager/max_acc", pp_.max_acc_, -1.0);
+    nh.param("max_vel", pp_.max_vel_, -1.0);
+    nh.param("max_acc", pp_.max_acc_, -1.0);
     nh.param("manager/feasibility_tolerance", pp_.feasibility_tolerance_, 0.0);
     nh.param("manager/control_points_distance", pp_.ctrl_pt_dist, -1.0);
     nh.param("manager/polyTraj_piece_length", pp_.polyTraj_piece_length, -1.0);
@@ -32,6 +44,7 @@ namespace ego_planner
     grid_map_->initMap(nh);
 
     ploy_traj_opt_.reset(new PolyTrajOptimizer);
+    setDroneIdtoOpt();
     ploy_traj_opt_->setParam(nh);
     ploy_traj_opt_->setEnvironment(grid_map_);
 
@@ -249,11 +262,11 @@ namespace ego_planner
     static int count_success = 0;
     sum_time += (t_init + t_opt).toSec();
     count_success++;
-    cout << "total time:\033[42m" << (t_init + t_opt).toSec()
-         << "\033[0m,init:" << t_init.toSec()
-         << ",optimize:" << t_opt.toSec()
-         << ",avg_time=" << sum_time / count_success
-         << ",count_success= " << count_success << endl;
+    // cout << "total time:\033[42m" << (t_init + t_opt).toSec()
+    //      << "\033[0m,init:" << t_init.toSec()
+    //      << ",optimize:" << t_opt.toSec()
+    //      << ",avg_time=" << sum_time / count_success
+    //      << ",count_success= " << count_success << endl;
     average_plan_time_ = sum_time / count_success;
 
     if (have_local_traj && use_formation)

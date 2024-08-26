@@ -3,9 +3,7 @@
     <arg name="map_size_x"/>
     <arg name="map_size_y"/>
     <arg name="map_size_z"/>
-    <arg name="init_x"/>
-    <arg name="init_y"/>
-    <arg name="init_z"/>
+    <arg name="config_file" />
 
     <arg name="point0_x"/>
     <arg name="point0_y"/>
@@ -17,9 +15,6 @@
     <arg name="point2_y"/>
     <arg name="point2_z"/>
     
-    <arg name="target_x"/>
-    <arg name="target_y"/>
-    <arg name="target_z"/>
     <arg name="drone_id"/>
     <arg name="formation_type"/>
     <arg name="weight_obstacle"/>
@@ -38,6 +33,7 @@
     <!-- <arg name="obj_num" value="8" /> -->
     <!-- main algorithm params -->
     <include file="$(find ego_planner)/launch/advanced_param.xml">
+        <arg name="config_file" value="$(arg config_file)"/>
         <arg name="drone_id"                value="$(arg drone_id)"/>
         <!-- <arg name="formation_type"          value="$(arg formation_type)"/> -->
         <arg name="map_size_x_"             value="$(arg map_size_x)"/>
@@ -69,10 +65,15 @@
         <arg name="fx" value="387.229248046875"/>
         <arg name="fy" value="387.229248046875"/>
         <!-- maximum velocity and acceleration the drone will reach -->
-        <arg name="max_vel" value="1.5" />
-        <arg name="max_acc" value="8.0" />
+
+        <arg name="local_update_range_x" value="8" />
+        <arg name="local_update_range_y" value="8" />
+        <arg name="local_update_range_z" value="8" />
         <!--always set to 1.5 times grater than sensing horizen-->
-        <arg name="planning_horizon" value="7.5" />
+
+        <arg name="planning_horizon" value="12" />
+        <arg name="local_map_margin" value="12" />
+
         <arg name="use_distinctive_trajs" value="false" />
         <!-- 3: use 2D Nav Goal to select goal  -->
         <!-- 2: use global waypoints below  -->
@@ -80,10 +81,10 @@
         <arg name="flight_type" value="3" />
         <!-- global waypoints -->
         <!-- It generates a piecewise min-snap traj passing all waypoints -->
-        <arg name="point_num" value="1" />
-        <arg name="point0_x" value="$(arg target_x)" />
-        <arg name="point0_y" value="$(arg target_y)" />
-        <arg name="point0_z" value="$(arg target_z)" />
+        <arg name="point_num" value="-1" />
+        <arg name="point0_x" value="0.0" />
+        <arg name="point0_y" value="0.0" />
+        <arg name="point0_z" value="0.0" />
 
         <arg name="point1_x" value="0.0" />
         <arg name="point1_y" value="0.0" />
@@ -107,14 +108,28 @@
         <param name="traj_server/time_forward" value="1.0" type="double"/>
     </node>
     <!-- use simulator -->
-    <include file="$(find ego_planner)/launch/simulator.xml">
-        <arg name="drone_id" value="$(arg drone_id)"/>
-        <arg name="map_size_x_" value="$(arg map_size_x)"/>
-        <arg name="map_size_y_" value="$(arg map_size_y)"/>
-        <arg name="map_size_z_" value="$(arg map_size_z)"/>
-        <arg name="init_x_" value="$(arg init_x)"/>
-        <arg name="init_y_" value="$(arg init_y)"/>
-        <arg name="init_z_" value="$(arg init_z)"/>
-        <arg name="odometry_topic" value="$(arg odom_topic)" />
-    </include>
+  <node pkg="odom_visualization" name="drone_$(arg drone_id)_odom_visualization" type="odom_visualization">
+        <remap from="~odom" to="drone_$(arg drone_id)_visual_slam/odom"/>
+        <param name="color/a" value="1.0"/>
+        <param name="color/r" value="0.0"/>
+        <param name="color/g" value="0.0"/>
+        <param name="color/b" value="0.0"/>
+        <param name="covariance_scale" value="100.0"/>
+        <param name="robot_scale" value="1.0"/>
+        <param name="tf45" value="false"/>
+        <param name="drone_id" value="drone_id"/>
+  </node>
+
+    <node pkg="airsim_package" name="airsim_$(arg drone_id)_bridge_cmd" type="bridge_cmd.py" output="screen" >
+        <param name="drone_id"                          value="$(arg drone_id)"/>
+    </node>
+
+    <node pkg="airsim_package" name="airsim_$(arg drone_id)_bridge_odom" type="bridge_odom.py" output="screen" >
+        <param name="drone_id"                          value="$(arg drone_id)"/>
+    </node>
+
+    <node pkg="airsim_package" name="airsim_$(arg drone_id)_bridge_lidar" type="bridge_lidar.py" output="screen" >
+        <param name="drone_id"                          value="$(arg drone_id)"/>
+    </node>
+
 </launch>

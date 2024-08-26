@@ -69,11 +69,11 @@ void GridMap::initMap(ros::NodeHandle &nh)
   mp_.min_occupancy_log_ = logit(mp_.p_occ_);
   mp_.unknown_flag_ = 0.01;
 
-  cout << "hit: " << mp_.prob_hit_log_ << endl;
-  cout << "miss: " << mp_.prob_miss_log_ << endl;
-  cout << "min log: " << mp_.clamp_min_log_ << endl;
-  cout << "max: " << mp_.clamp_max_log_ << endl;
-  cout << "thresh log: " << mp_.min_occupancy_log_ << endl;
+  // cout << "hit: " << mp_.prob_hit_log_ << endl;
+  // cout << "miss: " << mp_.prob_miss_log_ << endl;
+  // cout << "min log: " << mp_.clamp_min_log_ << endl;
+  // cout << "max: " << mp_.clamp_max_log_ << endl;
+  // cout << "thresh log: " << mp_.min_occupancy_log_ << endl;
 
   for (int i = 0; i < 3; ++i)
     mp_.map_voxel_num_(i) = ceil(mp_.map_size_(i) / mp_.resolution_);
@@ -684,6 +684,10 @@ void GridMap::clearAndInflateLocalMap()
 
 void GridMap::visCallback(const ros::TimerEvent & /*event*/)
 {
+  if (!md_.has_odom_)
+  {
+    return;
+  }
   publishMapInflate(true);
   publishMap();
 
@@ -827,7 +831,7 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
   Eigen::Vector3d p3d, p3d_inf;
 
   int inf_step = ceil(mp_.obstacles_inflation_ / mp_.resolution_);
-  int inf_step_z = 1;
+  int inf_step_z = inf_step;
 
   double max_x, max_y, max_z, min_x, min_y, min_z;
 
@@ -899,15 +903,16 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
   boundIndex(md_.local_bound_max_);
 
   // add virtual ceiling to limit flight height
-  if (mp_.virtual_ceil_height_ > -0.5)
-  {
-    int ceil_id = floor((mp_.virtual_ceil_height_ - mp_.map_origin_(2)) * mp_.resolution_inv_);
-    for (int x = md_.local_bound_min_(0); x <= md_.local_bound_max_(0); ++x)
-      for (int y = md_.local_bound_min_(1); y <= md_.local_bound_max_(1); ++y)
-      {
-        md_.occupancy_buffer_inflate_[toAddress(x, y, ceil_id)] = 1;
-      }
-  }
+  // TODO: add ceiling
+  // if (mp_.virtual_ceil_height_ > -0.5)
+  // {
+  //   int ceil_id = floor((mp_.virtual_ceil_height_ - mp_.map_origin_(2)) * mp_.resolution_inv_);
+  //   for (int x = md_.local_bound_min_(0); x <= md_.local_bound_max_(0); ++x)
+  //     for (int y = md_.local_bound_min_(1); y <= md_.local_bound_max_(1); ++y)
+  //     {
+  //       md_.occupancy_buffer_inflate_[toAddress(x, y, ceil_id)] = 1;
+  //     }
+  // }
 
   md_.esdf_need_update_ = true;
 }

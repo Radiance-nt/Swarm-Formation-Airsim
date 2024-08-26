@@ -50,9 +50,9 @@ namespace ego_planner
     drone_11_odom_sub_ = nh.subscribe("/drone_11_visual_slam/odom", 1, &PlanningVisualization::drone_11_odomeCallback, this);
     
     
-    if (drone_id_ == 0){
-      swarm_graph_visual_timer_ = nh.createTimer(ros::Duration(0.01), &PlanningVisualization::swarmGraphVisulCallback, this);
-    }
+    // if (drone_id_ == 0){
+    //   swarm_graph_visual_timer_ = nh.createTimer(ros::Duration(0.01), &PlanningVisualization::swarmGraphVisulCallback, this);
+    // }
   }
   
   void PlanningVisualization::swarmGraphVisulCallback(const ros::TimerEvent &e){

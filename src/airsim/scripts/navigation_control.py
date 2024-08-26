@@ -58,7 +58,8 @@ thread.start()
 global_objects = client.simListSceneObjects()
 
 for i in range(5):
-    client.simDestroyObject(f"Cylinder_{i}")
+    if f"Cylinder_{i}" in global_objects:
+        client.simDestroyObject(f"Cylinder_{i}")
 
 default_position = airsim.Vector3r()
 default_orientation = airsim.Quaternionr()

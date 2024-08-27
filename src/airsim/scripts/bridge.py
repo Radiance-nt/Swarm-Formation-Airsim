@@ -53,15 +53,6 @@ rospy.set_param('/start_navigation', True)
 t = -1
 initial_orientations = []
 while not rospy.is_shutdown():
-    if rospy.get_param("/takeoff", False) and len(initial_orientations) == 0:
-        for i, drone_name in enumerate(drones):
-            odom = client.simGetObjectPose(drones[i])
-
-            drone_position = [odom.position.x_val, odom.position.y_val, odom.position.z_val]
-            drone_orientation = [odom.orientation.w_val, odom.orientation.x_val, odom.orientation.y_val,
-                                 odom.orientation.z_val]
-            initial_orientations.append(drone_orientation)
-
     t += 1
     header = Header()
     header.stamp = rospy.Time.now()
@@ -80,6 +71,7 @@ while not rospy.is_shutdown():
     pub_point = ros_map_points[mask]
     pc_data = point_cloud2.create_cloud_xyz32(header, pub_point)
     map_pub.publish(pc_data)
+    rospy.sleep(2)
 
 for i, drone_name in enumerate(drones):
     client.enableApiControl(False, vehicle_name=drone_name)

@@ -1,6 +1,9 @@
 # Swarm-Formation-Airsim
 
-The program is experimentally used, run on Ubuntu 20.04.
+*The program is experimentally developed, test on Ubuntu 20.04.*
+
+![video](figs/video.png)
+![sim](figs/sim.png)
 
 ## 1. About
 
@@ -24,6 +27,7 @@ catkin_make -j1
 ```
 
 4. Run Airsim simulator:
+
 ```
 source devel/setup.bash
 ue_config=$(rospack find airsim_package)/ue_settings/fly.json
@@ -37,6 +41,32 @@ source devel/setup.bash
 roslaunch ego_planner fly.launch
 ```
 
-## 3. Tips
+#### After Running
+
+Check the directory `bags/` where it should contain rosbags and videos inside different directories.
+
+## 3. Structure
+
+#### *The program is experimentally developed and  contains a lot of unused code and unnecessary components.*
+
+
+Considering the files in `src/airsim/scripts/`:
+
+- `bridge.py` act as a controller that **reset** the simulator and IPC with other programs. It also publish the global
+  map for visualization in rviz.
+
+- `bridge_*.py` provide odometry and lidar information from Airsim and receive velocity and send to Airsim.
+
+- `navigation_control.py` is a upper-level controller which controls navigation points of the swarm.
+
+- `*_record.py` records rosbag file from ROS and videos from Airsim.
+
+More details and program executed can be observed in `src/planner/plan_manage/launch/fly.launch`
+
+## 4. Changes to origianl [Swarm-Formation](https://github.com/ZJU-FAST-Lab/Swarm-Formation)
+
+Please review the ***git commits*** and use AI tools to assist with understanding them.
+
+## 5. Tips
 
 Strongly recommend **[rosmon](http://wiki.ros.org/rosmon)** to replace  **roslaunch**.
